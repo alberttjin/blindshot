@@ -1,6 +1,6 @@
 (() => {
   const DURATION = 30_000;
-  const R = 26; // must match --r in style.css
+  const R = 34; // must match --r in style.css
   const HUD_H = 70;
   const BEST_KEY = "blindshot.best";
   const CURSOR_SVG =
@@ -124,7 +124,6 @@
     ui.results.hidden = true;
     ui.toast.hidden = true;
     fx.replaceChildren();
-    document.body.classList.add("playing");
 
     let n = 3;
     ui.count.textContent = n;
@@ -139,6 +138,7 @@
       clearInterval(step);
       ui.count.hidden = true;
       state = "playing";
+      document.body.classList.add("playing");
       endsAt = performance.now() + DURATION;
       placeTarget();
       raf = requestAnimationFrame(tick);

@@ -4,7 +4,7 @@
   --muted: #8a877f;
   --line: #d9d6ce;
   --hot: #ff4d1c;
-  --r: 26px; /* target radius, keep in sync with main.js */
+  --r: 34px; /* target radius, keep in sync with main.js */
   --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
   --sans: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Segoe UI", Arial, sans-serif;
 }
@@ -181,7 +181,7 @@ kbd {
   margin: calc(var(--r) * -1) 0 0 calc(var(--r) * -1);
   border-radius: 50%;
   background:
-    radial-gradient(circle, var(--bg) 0 3px, var(--hot) 3.5px 9px, var(--bg) 9.5px 15px, var(--hot) 15.5px);
+    radial-gradient(circle, var(--bg) 0 4px, var(--hot) 4.5px 12px, var(--bg) 12.5px 20px, var(--hot) 20.5px);
   z-index: 3;
   pointer-events: none;
   animation: pop 0.14s ease-out;
