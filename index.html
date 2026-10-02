@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>blindshot — aim without a cursor</title>
+  <meta name="description" content="30 seconds. No cursor. Click the target. How good is your aim, really?">
+  <meta property="og:title" content="blindshot">
+  <meta property="og:description" content="30 seconds. No cursor. How good is your aim, really?">
+  <meta name="theme-color" content="#efede8">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main id="stage" aria-live="polite">
+    <header class="hud">
+      <span class="brand">blindshot</span>
+      <span class="hud-time" id="time">30.00</span>
+      <span class="hud-score"><span id="score">0</span> <small>hits</small></span>
+    </header>
+
+    <section class="screen" id="intro">
+      <p class="kicker">aim trainer / cursor not included</p>
+      <h1>You can't see<br>your mouse.</h1>
+      <p class="lede">Targets appear. Your cursor doesn't. Click where you <em>think</em> you are. 30 seconds.</p>
+      <button class="btn" id="start">Start <kbd>space</kbd></button>
+      <p class="best" id="best-intro"></p>
+      <p class="touch-note">Works best with a mouse. On touch it's a bit too easy.</p>
+    </section>
+
+    <section class="screen" id="results" hidden>
+      <p class="kicker" id="rank">—</p>
+      <div class="big"><span id="final">0</span><small>hits</small></div>
+      <dl class="stats">
+        <div><dt>accuracy</dt><dd id="acc">0%</dd></div>
+        <div><dt>misses</dt><dd id="misses">0</dd></div>
+        <div><dt>avg miss</dt><dd id="avgmiss">—</dd></div>
+        <div><dt>best</dt><dd id="best">0</dd></div>
+      </dl>
+      <div class="row">
+        <button class="btn" id="again">Again <kbd>space</kbd></button>
+        <button class="btn ghost" id="share">Share score</button>
+      </div>
+      <p class="toast" id="toast" hidden>copied to clipboard</p>
+    </section>
+
+    <div class="count" id="count" hidden>3</div>
+    <div class="target" id="target" hidden></div>
+    <div id="fx"></div>
+  </main>
+
+  <script src="main.js"></script>
+</body>
+</html>
