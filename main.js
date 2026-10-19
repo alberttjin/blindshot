@@ -1,8 +1,8 @@
 (() => {
-  const DURATION = 30_000;
+  const DURATION = 15_000;
   const R = 34; // must match --r in style.css
   const HUD_H = 70;
-  const BEST_KEY = "blindshot.best";
+  const BEST_KEY = "blindshot.best15";
   const CURSOR_SVG =
     '<svg viewBox="0 0 16 24" width="16" height="24"><path d="M1 1v19l5-5 3.5 7.5 3-1.4L9 13.7h7z" fill="#fff" stroke="#141414" stroke-width="1.5" stroke-linejoin="round"/></svg>';
   const PING_HTML =
@@ -119,7 +119,7 @@
     hits = 0; misses = 0; totalDist = 0;
     tx = innerWidth / 2; ty = innerHeight / 2;
     ui.score.textContent = "0";
-    ui.time.textContent = "30.00";
+    ui.time.textContent = (DURATION / 1000).toFixed(2);
     ui.time.classList.remove("low");
     ui.intro.hidden = true;
     ui.results.hidden = true;
@@ -194,12 +194,12 @@
 
   function rankFor(score, shots) {
     if (shots === 0) return "did you fall asleep?";
-    if (score <= 3) return "fully blindfolded";
-    if (score <= 7) return "vibes-based aiming";
-    if (score <= 11) return "getting warm";
-    if (score <= 15) return "muscle memory online";
-    if (score <= 19) return "locked in";
-    if (score <= 24) return "radar brain";
+    if (score <= 1) return "fully blindfolded";
+    if (score <= 3) return "vibes-based aiming";
+    if (score <= 5) return "getting warm";
+    if (score <= 7) return "muscle memory online";
+    if (score <= 9) return "locked in";
+    if (score <= 12) return "radar brain";
     return "someone check this person's pc";
   }
 
@@ -209,7 +209,7 @@
     const url = location.href.split("#")[0];
     const avg = shots ? Math.round(totalDist / shots) : 0;
     track("share", { score: hits });
-    const text = `blindshot: ${hits} hits in 30s, ${acc}% accuracy, ${avg}px avg off, no cursor. beat that`;
+    const text = `blindshot: ${hits} hits in ${DURATION / 1000}s, ${acc}% accuracy, ${avg}px avg off, no cursor. beat that`;
     if (navigator.share && matchMedia("(hover: none)").matches) {
       try { await navigator.share({ text, url }); return; } catch {}
     }
