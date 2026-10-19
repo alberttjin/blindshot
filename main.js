@@ -20,8 +20,8 @@
     score: $("score"),
     final: $("final"),
     acc: $("acc"),
-    misses: $("misses"),
-    avgmiss: $("avgmiss"),
+    totalDist: $("totaldist"),
+    avgDist: $("avgdist"),
     best: $("best"),
     bestIntro: $("best-intro"),
     rank: $("rank"),
@@ -29,7 +29,7 @@
   };
 
   let state = "idle"; // idle | countdown | playing | done
-  let hits = 0, misses = 0, missDist = 0;
+  let hits = 0, misses = 0, totalDist = 0;
   let endsAt = 0, raf = 0;
   let tx = 0, ty = 0;
 
@@ -85,14 +85,11 @@
     placeTarget();
   }
 
-  function onMiss(x, y) {
+  function onMiss(x, y, d) {
     misses++;
-    const d = Math.hypot(x - tx, y - ty) - R;
-    missDist += d;
 
-    const len = Math.hypot(x - tx, y - ty);
     const tether = spawn("tether", tx, ty);
-    tether.style.width = `${len}px`;
+    tether.style.width = `${d}px`;
     tether.style.transform = `rotate(${Math.atan2(y - ty, x - tx)}rad)`;
     spawn("ghost-target", tx, ty);
     spawn("miss", x, y, `<span>${Math.round(d)}px</span>`);
@@ -115,7 +112,7 @@
   function start() {
     if (state === "countdown" || state === "playing") return;
     state = "countdown";
-    hits = 0; misses = 0; missDist = 0;
+    hits = 0; misses = 0; totalDist = 0;
     tx = innerWidth / 2; ty = innerHeight / 2;
     ui.score.textContent = "0";
     ui.time.textContent = "30.00";
@@ -159,8 +156,8 @@
 
     ui.final.textContent = hits;
     ui.acc.textContent = `${acc}%`;
-    ui.misses.textContent = misses;
-    ui.avgmiss.textContent = misses ? `${Math.round(missDist / misses)}px` : "—";
+    ui.totalDist.textContent = shots ? `${Math.round(totalDist).toLocaleString()}px` : "—";
+    ui.avgDist.textContent = shots ? `${Math.round(totalDist / shots)}px` : "—";
     ui.best.textContent = best;
     ui.rank.textContent = (isNew ? "new best · " : "") + rankFor(hits, shots);
 
@@ -197,7 +194,8 @@
     const shots = hits + misses;
     const acc = shots ? Math.round((hits / shots) * 100) : 0;
     const url = location.href.split("#")[0];
-    const text = `blindshot: ${hits} hits in 30s, ${acc}% accuracy, no cursor. beat that`;
+    const avg = shots ? Math.round(totalDist / shots) : 0;
+    const text = `blindshot: ${hits} hits in 30s, ${acc}% accuracy, ${avg}px avg off, no cursor. beat that`;
     if (navigator.share && matchMedia("(hover: none)").matches) {
       try { await navigator.share({ text, url }); return; } catch {}
     }
@@ -213,8 +211,10 @@
   stage.addEventListener("pointerdown", (e) => {
     if (state !== "playing" || e.button !== 0) return;
     e.preventDefault();
-    const inside = Math.hypot(e.clientX - tx, e.clientY - ty) <= R;
-    inside ? onHit() : onMiss(e.clientX, e.clientY);
+    const d = Math.hypot(e.clientX - tx, e.clientY - ty);
+    const inside = d <= R;
+    totalDist += d;
+    inside ? onHit() : onMiss(e.clientX, e.clientY, d);
     spawn(inside ? "ping is-hit" : "ping", e.clientX, e.clientY, PING_HTML);
     spawn("click-cursor", e.clientX, e.clientY, CURSOR_SVG);
   });
