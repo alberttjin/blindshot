@@ -40,6 +40,10 @@
     try { localStorage.setItem(BEST_KEY, String(n)); } catch {}
   };
 
+  const track = (name, params) => {
+    if (typeof gtag === "function") gtag("event", name, params);
+  };
+
   const showBestIntro = () => {
     const b = loadBest();
     ui.bestIntro.textContent = b ? `your best: ${b}` : "";
@@ -136,6 +140,7 @@
       ui.count.hidden = true;
       state = "playing";
       document.body.classList.add("playing");
+      track("game_start");
       endsAt = performance.now() + DURATION;
       placeTarget();
       raf = requestAnimationFrame(tick);
@@ -160,6 +165,14 @@
     ui.avgDist.textContent = shots ? `${Math.round(totalDist / shots)}px` : "—";
     ui.best.textContent = best;
     ui.rank.textContent = (isNew ? "new best · " : "") + rankFor(hits, shots);
+
+    track("game_end", {
+      score: hits,
+      misses,
+      accuracy: acc,
+      avg_off: shots ? Math.round(totalDist / shots) : 0,
+      new_best: isNew,
+    });
 
     setTimeout(() => {
       document.body.classList.remove("playing");
@@ -195,6 +208,7 @@
     const acc = shots ? Math.round((hits / shots) * 100) : 0;
     const url = location.href.split("#")[0];
     const avg = shots ? Math.round(totalDist / shots) : 0;
+    track("share", { score: hits });
     const text = `blindshot: ${hits} hits in 30s, ${acc}% accuracy, ${avg}px avg off, no cursor. beat that`;
     if (navigator.share && matchMedia("(hover: none)").matches) {
       try { await navigator.share({ text, url }); return; } catch {}
