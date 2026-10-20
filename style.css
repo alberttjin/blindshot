@@ -159,6 +159,33 @@ kbd {
 .row { display: flex; gap: 10px; flex-wrap: wrap; }
 #rank { color: var(--hot); }
 
+/* Share sheet */
+.sheet {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  background: rgba(20, 20, 20, 0.55);
+  padding: 20px;
+}
+.sheet[hidden] { display: none; }
+.sheet-card {
+  background: var(--bg);
+  padding: 20px;
+  border: 1.5px solid var(--ink);
+  max-width: 100%;
+}
+.sheet-card img {
+  display: block;
+  height: min(62vh, 560px);
+  max-width: 100%;
+  object-fit: contain;
+  margin: 0 auto 16px;
+  border: 1px solid var(--line);
+}
+a.btn { text-decoration: none; }
+
 /* Countdown */
 .count {
   position: absolute;

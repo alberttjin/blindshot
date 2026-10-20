@@ -25,11 +25,12 @@
     best: $("best"),
     bestIntro: $("best-intro"),
     rank: $("rank"),
-    toast: $("toast"),
   };
 
   let state = "idle"; // idle | countdown | playing | done
   let hits = 0, misses = 0, totalDist = 0;
+  let shotLog = [];
+  let cardBlob = null, cardUrl = "";
   let endsAt = 0, raf = 0;
   let tx = 0, ty = 0;
 
@@ -117,13 +118,15 @@
     if (state === "countdown" || state === "playing") return;
     state = "countdown";
     hits = 0; misses = 0; totalDist = 0;
+    shotLog = [];
+    cardBlob = null;
+    closeSheet();
     tx = innerWidth / 2; ty = innerHeight / 2;
     ui.score.textContent = "0";
     ui.time.textContent = (DURATION / 1000).toFixed(2);
     ui.time.classList.remove("low");
     ui.intro.hidden = true;
     ui.results.hidden = true;
-    ui.toast.hidden = true;
     fx.replaceChildren();
 
     let n = 3;
@@ -164,7 +167,26 @@
     ui.totalDist.textContent = shots ? `${Math.round(totalDist).toLocaleString()}px` : "—";
     ui.avgDist.textContent = shots ? `${Math.round(totalDist / shots)}px` : "—";
     ui.best.textContent = best;
-    ui.rank.textContent = (isNew ? "new best · " : "") + rankFor(hits, shots);
+    const rank = rankFor(hits, shots);
+    ui.rank.textContent = (isNew ? "new best · " : "") + rank;
+
+    const card = window.drawScoreCard({
+      hits,
+      misses,
+      acc,
+      avg: shots ? Math.round(totalDist / shots) : 0,
+      rank,
+      seconds: DURATION / 1000,
+      radius: R,
+      shots: shotLog,
+    });
+    card.toBlob((blob) => {
+      cardBlob = blob;
+      if (cardUrl) URL.revokeObjectURL(cardUrl);
+      cardUrl = URL.createObjectURL(blob);
+      sheet.img.src = cardUrl;
+      sheet.download.href = cardUrl;
+    }, "image/png");
 
     track("game_end", {
       score: hits,
@@ -203,23 +225,71 @@
     return "someone check this person's pc";
   }
 
-  async function share() {
+  const sheet = {
+    el: $("sheet"),
+    img: $("card-img"),
+    download: $("dl-img"),
+    toast: $("sheet-toast"),
+  };
+
+  function shareText() {
     const shots = hits + misses;
     const acc = shots ? Math.round((hits / shots) * 100) : 0;
-    const url = location.href.split("#")[0];
     const avg = shots ? Math.round(totalDist / shots) : 0;
-    track("share", { score: hits });
-    const text = `blindshot: ${hits} hits in ${DURATION / 1000}s, ${acc}% accuracy, ${avg}px avg off, no cursor. beat that`;
-    if (navigator.share && matchMedia("(hover: none)").matches) {
-      try { await navigator.share({ text, url }); return; } catch {}
+    return `blindshot: ${hits} hits in ${DURATION / 1000}s, ${acc}% accuracy, ${avg}px avg off, no cursor. beat that`;
+  }
+  const shareUrl = () => location.href.split("#")[0];
+
+  function sheetToast(msg) {
+    sheet.toast.textContent = msg;
+    sheet.toast.hidden = false;
+  }
+
+  function openSheet() {
+    sheet.toast.hidden = true;
+    sheet.el.hidden = false;
+    $("copy-img").focus();
+  }
+
+  function closeSheet() {
+    sheet.el.hidden = true;
+  }
+
+  async function share() {
+    if (!cardBlob) return;
+    track("share", { score: hits, method: "open" });
+    const file = new File([cardBlob], "blindshot.png", { type: "image/png" });
+    if (matchMedia("(hover: none)").matches && navigator.canShare?.({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], text: `${shareText()} ${shareUrl()}` });
+        track("share", { score: hits, method: "native" });
+        return;
+      } catch (err) {
+        if (err.name === "AbortError") return;
+      }
     }
+    openSheet();
+  }
+
+  async function copyImage() {
     try {
-      await navigator.clipboard.writeText(`${text} → ${url}`);
-      ui.toast.textContent = "copied to clipboard";
+      await navigator.clipboard.write([new ClipboardItem({ "image/png": cardBlob })]);
+      sheetToast("image copied. paste it anywhere");
+      track("share", { score: hits, method: "copy_image" });
     } catch {
-      ui.toast.textContent = `${text} → ${url}`;
+      sheetToast("can't copy images in this browser. use Download instead");
     }
-    ui.toast.hidden = false;
+  }
+
+  async function copyLink() {
+    const text = `${shareText()} → ${shareUrl()}`;
+    try {
+      await navigator.clipboard.writeText(text);
+      sheetToast("link copied");
+      track("share", { score: hits, method: "copy_link" });
+    } catch {
+      sheetToast(text);
+    }
   }
 
   stage.addEventListener("pointerdown", (e) => {
@@ -228,6 +298,7 @@
     const d = Math.hypot(e.clientX - tx, e.clientY - ty);
     const inside = d <= R;
     totalDist += d;
+    shotLog.push({ dx: e.clientX - tx, dy: e.clientY - ty, hit: inside });
     inside ? onHit() : onMiss(e.clientX, e.clientY, d);
     spawn(inside ? "ping is-hit" : "ping", e.clientX, e.clientY, PING_HTML);
     spawn("click-cursor", e.clientX, e.clientY, CURSOR_SVG);
@@ -238,6 +309,10 @@
   });
 
   addEventListener("keydown", (e) => {
+    if (!sheet.el.hidden) {
+      if (e.code === "Escape") closeSheet();
+      return;
+    }
     if (e.code === "Space" || e.code === "Enter") {
       if (state === "idle" || state === "done") {
         e.preventDefault();
@@ -256,6 +331,13 @@
   $("start").addEventListener("click", start);
   $("again").addEventListener("click", start);
   $("share").addEventListener("click", share);
+  $("copy-img").addEventListener("click", copyImage);
+  $("copy-link").addEventListener("click", copyLink);
+  $("close-sheet").addEventListener("click", closeSheet);
+  sheet.download.addEventListener("click", () => track("share", { score: hits, method: "download" }));
+  sheet.el.addEventListener("click", (e) => {
+    if (e.target === sheet.el) closeSheet();
+  });
 
   showBestIntro();
 })();
