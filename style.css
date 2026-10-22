@@ -34,7 +34,10 @@ html, body {
   background-position: -1px -1px;
 }
 
-body.playing, body.playing * { cursor: none !important; }
+/* A transparent image cursor stays hidden during macOS screen recording, where plain `none` flickers. */
+body.playing, body.playing * {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1' height='1'/%3E") 0 0, none !important;
+}
 
 /* HUD */
 .hud {
@@ -128,7 +131,10 @@ kbd {
   margin: 18px 0 0;
 }
 .touch-note { display: none; }
-@media (hover: none) { .touch-note { display: block; } kbd { display: none; } }
+.touch-note p { font-family: var(--sans); font-size: 16px; line-height: 1.5; color: var(--ink); margin: 0 0 16px; max-width: 34ch; }
+body.no-mouse .touch-note { display: block; }
+body.no-mouse #start, body.no-mouse #best-intro { display: none; }
+@media (hover: none) { kbd { display: none; } }
 
 /* Results */
 .big {

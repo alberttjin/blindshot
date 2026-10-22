@@ -8,6 +8,9 @@
   const PING_HTML =
     "<b></b>" + [0, 90, 180, 270].map((a) => `<i style="--a:${a}deg"></i>`).join("");
 
+  const noMouse = !matchMedia("(any-pointer: fine)").matches;
+  document.body.classList.toggle("no-mouse", noMouse);
+
   const $ = (id) => document.getElementById(id);
   const stage = $("stage");
   const target = $("target");
@@ -115,7 +118,7 @@
   }
 
   function start() {
-    if (state === "countdown" || state === "playing") return;
+    if (noMouse || state === "countdown" || state === "playing") return;
     state = "countdown";
     hits = 0; misses = 0; totalDist = 0;
     shotLog = [];
@@ -293,7 +296,7 @@
   }
 
   stage.addEventListener("pointerdown", (e) => {
-    if (state !== "playing" || e.button !== 0) return;
+    if (state !== "playing" || e.button !== 0 || e.pointerType === "touch") return;
     e.preventDefault();
     const d = Math.hypot(e.clientX - tx, e.clientY - ty);
     const inside = d <= R;
@@ -331,6 +334,15 @@
   $("start").addEventListener("click", start);
   $("again").addEventListener("click", start);
   $("share").addEventListener("click", share);
+  $("send-link").addEventListener("click", async (e) => {
+    const url = "https://blindshot.gg";
+    track("send_link");
+    try {
+      if (navigator.share) return await navigator.share({ title: "blindshot", url });
+      await navigator.clipboard.writeText(url);
+      e.target.textContent = "Link copied";
+    } catch {}
+  });
   $("copy-img").addEventListener("click", copyImage);
   $("copy-link").addEventListener("click", copyLink);
   $("close-sheet").addEventListener("click", closeSheet);
