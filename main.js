@@ -146,6 +146,7 @@
       ui.count.hidden = true;
       state = "playing";
       document.body.classList.add("playing");
+      lockPointer();
       track("game_start");
       endsAt = performance.now() + DURATION;
       placeTarget();
@@ -155,6 +156,7 @@
 
   function finish() {
     state = "done";
+    unlockPointer();
     cancelAnimationFrame(raf);
     target.hidden = true;
     ui.time.textContent = "0.00";
@@ -207,6 +209,7 @@
 
   function abort() {
     state = "idle";
+    unlockPointer();
     cancelAnimationFrame(raf);
     target.hidden = true;
     ui.count.hidden = true;
@@ -295,16 +298,49 @@
     }
   }
 
+  // Pointer lock hides the cursor at the OS level, so screen recorders can't draw it.
+  // While locked, clientX/Y stop updating and we track the position from movement deltas.
+  let mx = innerWidth / 2, my = innerHeight / 2;
+  let locked = false;
+  const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+
+  function lockPointer() {
+    try {
+      stage.requestPointerLock?.()?.catch?.(() => {});
+    } catch {}
+  }
+
+  function unlockPointer() {
+    if (document.pointerLockElement) document.exitPointerLock();
+  }
+
+  document.addEventListener("pointerlockchange", () => {
+    locked = document.pointerLockElement === stage;
+    if (!locked && state === "playing") abort();
+  });
+
+  addEventListener("pointermove", (e) => {
+    if (locked) {
+      mx = clamp(mx + e.movementX, 0, innerWidth - 1);
+      my = clamp(my + e.movementY, 0, innerHeight - 1);
+    } else {
+      mx = e.clientX;
+      my = e.clientY;
+    }
+  });
+
   stage.addEventListener("pointerdown", (e) => {
     if (state !== "playing" || e.button !== 0 || e.pointerType === "touch") return;
     e.preventDefault();
-    const d = Math.hypot(e.clientX - tx, e.clientY - ty);
+    const x = locked ? mx : e.clientX;
+    const y = locked ? my : e.clientY;
+    const d = Math.hypot(x - tx, y - ty);
     const inside = d <= R;
     totalDist += d;
-    shotLog.push({ dx: e.clientX - tx, dy: e.clientY - ty, hit: inside });
-    inside ? onHit() : onMiss(e.clientX, e.clientY, d);
-    spawn(inside ? "ping is-hit" : "ping", e.clientX, e.clientY, PING_HTML);
-    spawn("click-cursor", e.clientX, e.clientY, CURSOR_SVG);
+    shotLog.push({ dx: x - tx, dy: y - ty, hit: inside });
+    inside ? onHit() : onMiss(x, y, d);
+    spawn(inside ? "ping is-hit" : "ping", x, y, PING_HTML);
+    spawn("click-cursor", x, y, CURSOR_SVG);
   });
 
   stage.addEventListener("contextmenu", (e) => {
